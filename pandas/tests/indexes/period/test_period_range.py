@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import pandas as pd
 
 from pandas import (
     NaT,
@@ -239,3 +240,38 @@ class TestPeriodRangeDisallowedFreqs:
 
         with tm.assert_produces_warning(FutureWarning, match=msg):
             period_range(freq=freq_depr, start="1/1/2001", end="12/1/2009")
+
+    ##### NEW TESTS
+            
+    @pytest.mark.parametrize("freq", ["1Y", "3Y", "7Y"])
+    def test_period_index_plot_starts_correctly(self,freq):
+        # Create a PeriodIndex and DataFrame
+
+        expected_start_year = "2000"
+        idx = period_range("2000-01-01", freq=freq, periods=4)
+        df = pd.DataFrame(np.arange(len(idx)), index=idx)
+
+        # Plot the DataFrame
+        ax = df.plot()
+
+        # Retrieve the x-axis tick labels
+        xtick_labels = [tick.get_text() for tick in ax.get_xticklabels()]
+
+        # Check if the first x-axis label matches the expected start
+        assert xtick_labels[0] == expected_start_year
+
+    def test_multiplier_to_frquency(self):
+        expected = date_range(
+            start="2017-01-01", periods=4, freq="3h", name="foo"
+        ).to_period()
+        start, end = str(expected[0]), str(expected[-1])
+
+        result = period_range(start=start, end=end, freq="3h", name="foo")
+        tm.assert_index_equal(result, expected)
+
+        result = period_range(start=start, periods=4, freq="3h", name="foo")
+        tm.assert_index_equal(result, expected)
+
+        result = period_range(end=end, periods=4, freq="3h", name="foo")
+        tm.assert_index_equal(result, expected)
+
